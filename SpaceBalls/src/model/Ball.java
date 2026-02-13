@@ -45,9 +45,9 @@ public class Ball implements Runnable {
         y += velY * deltaSeconds;
     }
 
-    /** Convierte la pelota a un DTO para la vista. */
+    /** Convierte la pelota a un DTO para la vista o red. */
     public BallDTO toDTO() {
-        return new BallDTO(x, y, radius, color);
+        return new BallDTO(x, y, radius, velX, velY, color);
     }
 
     @Override

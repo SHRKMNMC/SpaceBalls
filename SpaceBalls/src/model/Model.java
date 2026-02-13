@@ -20,19 +20,16 @@ public class Model {
     private volatile boolean running = false;
     private double currentFPS = 0.0;
 
-    // 🔥 Ahora se inicializa vacío y se actualiza desde la vista
     private Rectangle bounds = new Rectangle(0, 0, 1, 1);
 
     private int controlDX = 0, controlDY = 0;
 
     public EventDetector getEventDetector() { return eventDetector; }
 
-    /** 🔥 NUEVO: actualizar límites desde el controlador */
     public void setBounds(int width, int height) {
         this.bounds = new Rectangle(0, 0, width, height);
     }
 
-    /** Inicia el game loop. */
     public void startGameLoop(Runnable onFrameRendered) {
         if (running) return;
         running = true;
@@ -59,7 +56,6 @@ public class Model {
         loop.start();
     }
 
-    /** Actualiza física, movimiento y eventos. */
     private void update(double deltaSeconds) {
         synchronized (balls) {
             fisics.update(balls, bounds, deltaSeconds);
@@ -83,6 +79,22 @@ public class Model {
     public void setControlDirection(int dx, int dy) {
         controlDX = dx;
         controlDY = dy;
+    }
+
+    /** 🔥 Crear pelota idéntica desde red */
+    public void createBallFromDTO(BallDTO dto) {
+        Ball ball = new Ball(
+                dto.getX(),
+                dto.getY(),
+                dto.getRadius(),
+                dto.getVelX(),
+                dto.getVelY(),
+                dto.getColor()
+        );
+
+        synchronized (balls) {
+            balls.add(ball);
+        }
     }
 
     public List<BallDTO> getBallsSnapshot() {
