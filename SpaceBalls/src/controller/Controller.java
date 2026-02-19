@@ -6,12 +6,19 @@ import view.View;
 
 import java.util.List;
 
+/**
+ * Controlador principal del juego.
+ * Coordina:
+ * - Vista
+ * - Modelo
+ * - Comunicación en red (MasterController)
+ */
 public class Controller {
 
     private final Model model;
     private final View view;
 
-    // 🔥 NUEVO: referencia al MasterController
+    /** Controlador maestro para red (cliente/servidor) */
     private MasterController masterController;
 
     public Controller(Model model, View view) {
@@ -19,59 +26,86 @@ public class Controller {
         this.view = view;
     }
 
-    // 🔥 NUEVO: setter para inyectar el MasterController
+    /** Inyecta el MasterController después de crearlo */
     public void setMasterController(MasterController masterController) {
         this.masterController = masterController;
     }
 
+    /**
+     * Inicializa la UI y arranca el game loop del modelo.
+     */
     public void init() {
         view.initUI();
         model.startGameLoop(view::repaintViewer);
     }
 
-    public void onCreateBall(int size, int speed) {
-        model.createRandomBall(size, speed);
+    /**
+     * Crear pelota normal y enviarla por red si procede.
+     */
+    public void onCreateBall(int radius, int speed) {
+        model.createRandomBall(radius, speed);
 
-        // 🔥 Enviar la última pelota creada al otro jugador
         if (masterController != null) {
-            List<BallDTO> balls = model.getBallsSnapshot();
-            if (!balls.isEmpty()) {
-                BallDTO last = balls.get(balls.size() - 1);
-                masterController.sendBall(last);
+            List<BallDTO> snapshot = model.getBallsSnapshot();
+            if (!snapshot.isEmpty()) {
+                BallDTO lastBall = snapshot.get(snapshot.size() - 1);
+                masterController.sendBall(lastBall);
             }
         }
     }
 
-    public void onCreateControlableBall(int size, int speed) {
-        model.createControlableBall(size, speed);
+    /**
+     * Crear pelota controlable y enviarla por red.
+     */
+    public void onCreateControlableBall(int radius, int speed) {
+        model.createControlableBall(radius, speed);
 
-        // 🔥 Enviar también la pelota controlable al otro jugador
         if (masterController != null) {
-            List<BallDTO> balls = model.getBallsSnapshot();
-            if (!balls.isEmpty()) {
-                BallDTO last = balls.get(balls.size() - 1);
-                masterController.sendBall(last);
+            List<BallDTO> snapshot = model.getBallsSnapshot();
+            if (!snapshot.isEmpty()) {
+                BallDTO lastBall = snapshot.get(snapshot.size() - 1);
+                masterController.sendBall(lastBall);
             }
         }
     }
 
-    /** 🔥 Recibir pelota desde red */
+    /**
+     * Recibir pelota desde red y crearla en el modelo.
+     */
     public void onReceiveBall(BallDTO dto) {
         model.createBallFromDTO(dto);
     }
 
-    public List<BallDTO> getBallsSnapshot() { return model.getBallsSnapshot(); }
-    public List<CollissionEvent> getCollisionEvents() { return model.getEventDetector().getEvents(); }
+    // Métodos de acceso para la vista
+
+    public List<BallDTO> getBallsSnapshot() {
+        return model.getBallsSnapshot();
+    }
+
+    public List<CollissionEvent> getCollisionEvents() {
+        return model.getEventDetector().getEvents();
+    }
 
     public CollissionEvent getLastCollisionEvent() {
         List<CollissionEvent> events = model.getEventDetector().getEvents();
         return events.isEmpty() ? null : events.get(events.size() - 1);
     }
 
-    public int getBallCount() { return model.getBallCount(); }
-    public double getFPS() { return model.getCurrentFPS(); }
+    public int getBallCount() {
+        return model.getBallCount();
+    }
 
-    public void setControlDirection(int dx, int dy) { model.setControlDirection(dx, dy); }
+    public double getFPS() {
+        return model.getCurrentFPS();
+    }
 
-    public void updateBounds(int width, int height) { model.setBounds(width, height); }
+    /** Actualiza dirección de movimiento del jugador */
+    public void setControlDirection(int dx, int dy) {
+        model.setControlDirection(dx, dy);
+    }
+
+    /** Actualiza límites del área de juego */
+    public void updateBounds(int width, int height) {
+        model.setBounds(width, height);
+    }
 }

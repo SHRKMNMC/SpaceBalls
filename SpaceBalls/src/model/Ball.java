@@ -9,8 +9,8 @@ import java.util.Random;
  */
 public class Ball implements Runnable {
 
-    protected double x, y;
-    protected double velX, velY;
+    protected double x, y;       // posición (centro)
+    protected double velX, velY; // velocidad
     protected int radius;
     protected Color color;
 
@@ -25,27 +25,31 @@ public class Ball implements Runnable {
         this.color = color;
     }
 
-    /** Crea una pelota aleatoria dentro de los límites. */
+    /**
+     * Crear una pelota aleatoria dentro de los límites.
+     */
     public static Ball randomBall(Rectangle bounds, int radius, int speed) {
-        Random r = new Random();
-        double x = bounds.x + radius + r.nextInt(Math.max(1, bounds.width - 2 * radius));
-        double y = bounds.y + radius + r.nextInt(Math.max(1, bounds.height - 2 * radius));
+        Random random = new Random();
 
-        double angle = r.nextDouble() * Math.PI * 2;
-        double vx = Math.cos(angle) * speed;
-        double vy = Math.sin(angle) * speed;
+        double x = bounds.x + radius + random.nextInt(Math.max(1, bounds.width - 2 * radius));
+        double y = bounds.y + radius + random.nextInt(Math.max(1, bounds.height - 2 * radius));
 
-        Color color = new Color(r.nextInt(256), r.nextInt(256), r.nextInt(256));
-        return new Ball(x, y, radius, vx, vy, color);
+        double angle = random.nextDouble() * Math.PI * 2;
+        double velX = Math.cos(angle) * speed;
+        double velY = Math.sin(angle) * speed;
+
+        Color color = new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
+
+        return new Ball(x, y, radius, velX, velY, color);
     }
 
-    /** Actualiza la posición según la velocidad. */
+    /** Actualizar posición según velocidad */
     public void updatePosition(double deltaSeconds) {
         x += velX * deltaSeconds;
         y += velY * deltaSeconds;
     }
 
-    /** Convierte la pelota a un DTO para la vista o red. */
+    /** Convertir a DTO para red o vista */
     public BallDTO toDTO() {
         return new BallDTO(x, y, radius, velX, velY, color);
     }
@@ -60,12 +64,13 @@ public class Ball implements Runnable {
 
     public void stop() { running = false; }
 
-    // Getters y setters usados por la física
+    // Getters y setters
     public double getX() { return x; }
     public double getY() { return y; }
     public int getRadius() { return radius; }
     public double getVelX() { return velX; }
     public double getVelY() { return velY; }
+
     public void setX(double x) { this.x = x; }
     public void setY(double y) { this.y = y; }
     public void setVelX(double velX) { this.velX = velX; }

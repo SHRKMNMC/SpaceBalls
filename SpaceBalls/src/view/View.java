@@ -9,13 +9,15 @@ import java.awt.event.ComponentEvent;
 
 /**
  * Ventana principal del juego.
- * Contiene el Viewer, el panel de control y el panel de datos.
+ * Ahora también arranca el hilo del Viewer.
  */
 public class View extends JFrame {
 
     private Controller controller;
     private Viewer viewer;
     private DataPanel dataPanel;
+
+    private Thread viewerThread;
 
     public View() {
         super("Juego MVC");
@@ -27,7 +29,7 @@ public class View extends JFrame {
         this.controller = controller;
     }
 
-    /** Inicializa toda la interfaz. */
+    /** Inicializa toda la interfaz */
     public void initUI() {
         viewer = new Viewer(controller);
         dataPanel = new DataPanel(controller);
@@ -39,12 +41,12 @@ public class View extends JFrame {
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
-        setResizable(true); // ahora puede cambiar tamaño si quieres
+        setResizable(true);
 
-        // 🔥 Avisar al controlador del tamaño REAL del viewer
+        // Avisar al modelo del tamaño real del área de juego
         controller.updateBounds(viewer.getWidth(), viewer.getHeight());
 
-        // 🔥 Si el viewer cambia de tamaño → avisar al controlador
+        // Si cambia el tamaño, actualizar límites
         viewer.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -53,11 +55,17 @@ public class View extends JFrame {
         });
 
         viewer.requestFocusInWindow();
+
+        // ============================================================
+        // ARRANCAR EL HILO DEL VIEWER
+        // ============================================================
+        viewerThread = new Thread(viewer);
+        viewerThread.setDaemon(true);
+        viewerThread.start();
     }
 
-    /** Llamado por el game loop para redibujar. */
+    /** Ya no se usa para render, pero sí para actualizar datos */
     public void repaintViewer() {
-        viewer.render();
         dataPanel.updateData();
     }
 }

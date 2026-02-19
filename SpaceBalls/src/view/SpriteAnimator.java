@@ -6,30 +6,30 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 /**
- * Reproduce una animación basada en un sprite sheet.
+ * Controla una animación basada en un sprite sheet.
+ * Implementa Runnable para ejecutarse en su propio hilo.
  */
-public class SpriteAnimator {
+public class SpriteAnimator implements Runnable {
 
-    private final BufferedImage sheet;
-    private final int rows, cols;
+    private final BufferedImage spriteSheet;
+    private final int rows, columns;
     private final int frameWidth, frameHeight;
-    private final double frameDuration;
+    private final double frameDurationSeconds;
 
-    private double elapsed = 0;
-    private int frame = 0;
-    private boolean playing = false;
+    private volatile boolean playing = false;
+    private volatile int currentFrame = 0;
 
-    public SpriteAnimator(BufferedImage sheet, int rows, int cols, double frameDuration) {
-        this.sheet = sheet;
+    public SpriteAnimator(BufferedImage sheet, int rows, int columns, double frameDurationSeconds) {
+        this.spriteSheet = sheet;
         this.rows = rows;
-        this.cols = cols;
-        this.frameDuration = frameDuration;
+        this.columns = columns;
+        this.frameDurationSeconds = frameDurationSeconds;
 
-        this.frameWidth = sheet.getWidth() / cols;
+        this.frameWidth = sheet.getWidth() / columns;
         this.frameHeight = sheet.getHeight() / rows;
     }
 
-    /** Carga un sprite sheet desde recursos. */
+    /** Cargar sprite sheet desde recursos */
     public static BufferedImage loadSheet(String path) {
         try {
             return ImageIO.read(SpriteAnimator.class.getResource(path));
@@ -39,60 +39,53 @@ public class SpriteAnimator {
         }
     }
 
-    /** Inicia la animación desde el principio. */
+    /** Inicia la animación en un hilo propio */
     public void playOnce() {
-        if (!playing) {
-            playing = true;
-            frame = 0;
-            elapsed = 0;
-        }
+        if (playing) return;
+
+        playing = true;
+        currentFrame = 0;
+
+        Thread animationThread = new Thread(this);
+        animationThread.setDaemon(true);
+        animationThread.start();
     }
 
-    /** Avanza la animación según el tiempo. */
-    public void update(double dt) {
-        if (!playing) return;
+    /** Avanza los frames en un hilo independiente */
+    @Override
+    public void run() {
+        int totalFrames = rows * columns;
 
-        elapsed += dt;
-        if (elapsed >= frameDuration) {
-            elapsed -= frameDuration;
-            frame++;
+        try {
+            while (playing && currentFrame < totalFrames) {
 
-            if (frame >= rows * cols) {
-                frame = rows * cols - 1;
-                playing = false;
+                Thread.sleep((long) (frameDurationSeconds * 1000));
+
+                currentFrame++;
+
+                if (currentFrame >= totalFrames) {
+                    playing = false;
+                }
             }
+
+        } catch (InterruptedException e) {
+            playing = false;
         }
     }
 
-    /** Dibuja el frame actual a tamaño original. */
-    public void draw(Graphics2D g, int x, int y) {
+    /** Dibuja el frame actual escalado */
+    public void draw(Graphics2D g, int x, int y, int width, int height) {
         if (!playing) return;
 
-        int row = frame / cols;
-        int col = frame % cols;
+        int row = currentFrame / columns;
+        int col = currentFrame % columns;
 
-        int sx = col * frameWidth;
-        int sy = row * frameHeight;
+        int srcX = col * frameWidth;
+        int srcY = row * frameHeight;
 
-        g.drawImage(sheet,
-                x, y, x + frameWidth, y + frameHeight,
-                sx, sy, sx + frameWidth, sy + frameHeight,
-                null);
-    }
-
-    /** 🔥 NUEVO: dibujar con tamaño personalizado (escalado) */
-    public void draw(Graphics2D g, int x, int y, int w, int h) {
-        if (!playing) return;
-
-        int row = frame / cols;
-        int col = frame % cols;
-
-        int sx = col * frameWidth;
-        int sy = row * frameHeight;
-
-        g.drawImage(sheet,
-                x, y, x + w, y + h,
-                sx, sy, sx + frameWidth, sy + frameHeight,
+        g.drawImage(spriteSheet,
+                x, y, x + width, y + height,
+                srcX, srcY, srcX + frameWidth, srcY + frameHeight,
                 null);
     }
 

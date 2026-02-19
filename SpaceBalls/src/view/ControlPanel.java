@@ -14,27 +14,31 @@ public class ControlPanel extends JPanel {
 
     public ControlPanel(Controller controller) {
         this.controller = controller;
+
         setLayout(new FlowLayout(FlowLayout.LEFT));
 
-        JSpinner size = new JSpinner(new SpinnerNumberModel(20, 5, 100, 1));
-        JSpinner speed = new JSpinner(new SpinnerNumberModel(150, 10, 500, 10));
+        // Controles de tamaño y velocidad
+        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(20, 5, 100, 1));
+        JSpinner speedSpinner = new JSpinner(new SpinnerNumberModel(150, 10, 500, 10));
 
-        JButton addBall = new JButton("Añadir pelota");
-        JButton addControl = new JButton("Pelota controlable");
+        JButton createBallButton = new JButton("Añadir pelota");
+        JButton createPlayerBallButton = new JButton("Pelota controlable");
 
         add(new JLabel("Tamaño:"));
-        add(size);
+        add(sizeSpinner);
         add(new JLabel("Velocidad:"));
-        add(speed);
-        add(addBall);
-        add(addControl);
+        add(speedSpinner);
+        add(createBallButton);
+        add(createPlayerBallButton);
 
-        addBall.addActionListener(e ->
-                controller.onCreateBall((int) size.getValue(), (int) speed.getValue())
+        // Crear pelota normal
+        createBallButton.addActionListener(e ->
+                controller.onCreateBall((int) sizeSpinner.getValue(), (int) speedSpinner.getValue())
         );
 
-        addControl.addActionListener(e ->
-                controller.onCreateControlableBall((int) size.getValue(), (int) speed.getValue())
+        // Crear pelota controlable
+        createPlayerBallButton.addActionListener(e ->
+                controller.onCreateControlableBall((int) sizeSpinner.getValue(), (int) speedSpinner.getValue())
         );
     }
 }

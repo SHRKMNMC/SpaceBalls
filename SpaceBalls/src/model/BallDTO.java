@@ -3,7 +3,10 @@ package model;
 import java.awt.*;
 import java.io.Serializable;
 
-/** DTO inmutable para enviar datos seguros a la vista y por red. */
+/**
+ * Objeto inmutable para enviar datos de pelotas
+ * a la vista o por red sin exponer el modelo real.
+ */
 public final class BallDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;

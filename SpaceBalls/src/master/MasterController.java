@@ -5,6 +5,10 @@ import connectors.ServerConnector;
 import controller.Controller;
 import model.BallDTO;
 
+/**
+ * Controlador maestro que gestiona la comunicación en red.
+ * Puede actuar como servidor o cliente.
+ */
 public class MasterController {
 
     private final Controller localController;
@@ -16,19 +20,19 @@ public class MasterController {
         this.localController = controller;
     }
 
-    /** Modo servidor */
+    /** Inicia modo servidor */
     public void startAsServer(int port) {
         serverConnector = new ServerConnector(port, this::onBallReceived);
         serverConnector.start();
     }
 
-    /** Modo cliente */
+    /** Inicia modo cliente */
     public void startAsClient(String host, int port) {
         playerConnector = new PlayerConnector(host, port, this::onBallReceived);
         playerConnector.start();
     }
 
-    /** Cuando llega una pelota desde la red */
+    /** Callback cuando llega una pelota desde red */
     private void onBallReceived(BallDTO ball) {
         System.out.println("Pelota recibida desde red.");
         localController.onReceiveBall(ball);
