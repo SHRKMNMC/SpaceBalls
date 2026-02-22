@@ -40,7 +40,7 @@ public class SpriteAnimator implements Runnable {
     }
 
     /** Inicia la animación en un hilo propio */
-    public void playOnce() {
+    public synchronized void playOnce() {
         if (playing) return;
 
         playing = true;
@@ -61,10 +61,11 @@ public class SpriteAnimator implements Runnable {
 
                 Thread.sleep((long) (frameDurationSeconds * 1000));
 
-                currentFrame++;
-
-                if (currentFrame >= totalFrames) {
-                    playing = false;
+                synchronized (this) {
+                    currentFrame++;
+                    if (currentFrame >= totalFrames) {
+                        playing = false;
+                    }
                 }
             }
 
@@ -77,8 +78,13 @@ public class SpriteAnimator implements Runnable {
     public void draw(Graphics2D g, int x, int y, int width, int height) {
         if (!playing) return;
 
-        int row = currentFrame / columns;
-        int col = currentFrame % columns;
+        int frame;
+        synchronized (this) {
+            frame = currentFrame;
+        }
+
+        int row = frame / columns;
+        int col = frame % columns;
 
         int srcX = col * frameWidth;
         int srcY = row * frameHeight;

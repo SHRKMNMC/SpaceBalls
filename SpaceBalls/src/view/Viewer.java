@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Lienzo principal donde se dibuja el juego.
- * Ahora implementa Runnable para poder ejecutarse en su propio hilo.
+ * Implementa Runnable para ejecutarse en su propio hilo.
  */
 public class Viewer extends Canvas implements Runnable {
 
@@ -133,7 +133,7 @@ public class Viewer extends Canvas implements Runnable {
             }
         }
 
-        // Dibujar animaciones activas
+        // Dibujar animaciones activas (corregido para evitar congelamientos)
         for (int i = activeAnimations.size() - 1; i >= 0; i--) {
             ActiveAnimation anim = activeAnimations.get(i);
 
