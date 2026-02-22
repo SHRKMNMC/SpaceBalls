@@ -49,28 +49,29 @@ public class Controller {
             List<BallDTO> snapshot = model.getBallsSnapshot();
             if (!snapshot.isEmpty()) {
                 BallDTO lastBall = snapshot.get(snapshot.size() - 1);
+                // Las pelotas normales SÍ se envían por red
                 masterController.sendBall(lastBall);
             }
         }
     }
 
     /**
-     * Crear pelota controlable y enviarla por red.
+     * Crear pelota controlable.
+     * IMPORTANTE: esta pelota es SOLO LOCAL, no se envía por red.
      */
     public void onCreateControlableBall(int radius, int speed) {
+        // Se crea la pelota controlable solo en este modelo
         model.createControlableBall(radius, speed);
 
-        if (masterController != null) {
-            List<BallDTO> snapshot = model.getBallsSnapshot();
-            if (!snapshot.isEmpty()) {
-                BallDTO lastBall = snapshot.get(snapshot.size() - 1);
-                masterController.sendBall(lastBall);
-            }
-        }
+        // NO se envía por red para que:
+        // - Cada jugador tenga su propia pelota controlable local
+        // - No afecte al otro peer
+        // - No se "duplique" ni cause comportamientos raros
     }
 
     /**
      * Recibir pelota desde red y crearla en el modelo.
+     * Aquí solo llegan pelotas normales (no controlables).
      */
     public void onReceiveBall(BallDTO dto) {
         model.createBallFromDTO(dto);
