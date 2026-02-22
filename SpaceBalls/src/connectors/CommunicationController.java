@@ -2,78 +2,96 @@ package connectors;
 
 import model.BallDTO;
 
-import java.io.*;
 import java.net.Socket;
 import java.util.function.Consumer;
 
 /**
- * Controla la comunicación bidireccional con un socket.
- * Envía y recibe BallDTO usando Object streams.
+ * Controlador de comunicación central.
+ * Gestiona el Channel, HealthChannel y coordina reconexiones.
  */
-public class CommunicationController implements Runnable {
+public class CommunicationController {
 
-    private final Socket socket;
-
-    private ObjectOutputStream outputStream;
-    private ObjectInputStream inputStream;
-
-    /** Callback que se ejecuta cuando llega una pelota desde la red */
     private final Consumer<BallDTO> onBallReceived;
 
-    public CommunicationController(Socket socket, Consumer<BallDTO> onBallReceived) {
-        this.socket = socket;
+    private Channel channel;
+    private HealthChannel healthChannel;
+
+    private ServerConnector serverConnector;
+    private PlayerConnector playerConnector;
+    private boolean isClient; // true = cliente, false = servidor
+
+    public CommunicationController(Consumer<BallDTO> onBallReceived) {
         this.onBallReceived = onBallReceived;
     }
 
     /**
-     * Inicializa streams y lanza el hilo de escucha.
+     * Se llama cuando un conector (servidor/cliente) obtiene un Socket válido.
+     * Crea el Channel y el HealthChannel.
      */
-    public void start() {
-        try {
-            outputStream = new ObjectOutputStream(socket.getOutputStream());
-            inputStream  = new ObjectInputStream(socket.getInputStream());
-        } catch (IOException e) {
-            System.err.println("Error creando streams: " + e.getMessage());
-            return;
+    public synchronized void attachSocket(Socket socket) {
+        System.out.println("Socket adjuntado al Channel.");
+
+        // Cerrar canal anterior si existía
+        if (channel != null) {
+            channel.close();
         }
 
-        Thread listenerThread = new Thread(this);
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+        channel = new Channel(
+                socket,
+                onBallReceived,
+                this::onHealthReceived,
+                this::onChannelDisconnected
+        );
+        channel.start();
+
+        healthChannel = new HealthChannel(channel, 2000);
+        healthChannel.start();
+    }
+
+    /** Registrar conector servidor (para reconexión) */
+    public void registerServerConnector(ServerConnector serverConnector) {
+        this.serverConnector = serverConnector;
+        this.isClient = false;
+    }
+
+    /** Registrar conector cliente (para reconexión) */
+    public void registerPlayerConnector(PlayerConnector playerConnector) {
+        this.playerConnector = playerConnector;
+        this.isClient = true;
+    }
+
+    /** Llamado cuando llega un PING desde el otro lado */
+    private void onHealthReceived() {
+        System.out.println("PING recibido.");
     }
 
     /**
-     * Hilo que escucha mensajes entrantes.
+     * Llamado por Channel cuando la conexión se cierra o falla.
+     * Aquí lanzamos un hilo que intenta reconectar.
      */
-    @Override
-    public void run() {
-        try {
-            while (!socket.isClosed()) {
-                Object received = inputStream.readObject();
+    private void onChannelDisconnected() {
+        System.out.println("Channel desconectado. Intentando reconectar...");
 
-                if (received instanceof BallDTO ball) {
-                    onBallReceived.accept(ball);
-                }
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(2000); // pequeña espera antes de reintentar
+            } catch (InterruptedException ignored) {}
+
+            if (isClient && playerConnector != null) {
+                playerConnector.reconnect();
+            } else if (!isClient && serverConnector != null) {
+                serverConnector.relisten();
             }
-        } catch (Exception e) {
-            System.out.println("Conexión cerrada.");
-        }
+        });
+
+        t.setDaemon(true);
+        t.start();
     }
 
-    /**
-     * Envía una pelota al otro extremo.
-     */
-    public synchronized void sendBall(BallDTO ball) {
-        try {
-            outputStream.writeObject(ball);
-            outputStream.flush();
-        } catch (IOException e) {
-            System.err.println("Error enviando pelota: " + e.getMessage());
+    /** Enviar pelota al otro extremo */
+    public void sendBall(BallDTO ball) {
+        if (channel != null) {
+            channel.sendBall(ball);
         }
-    }
-
-    /** Cierra el socket */
-    public void close() {
-        try { socket.close(); } catch (IOException ignored) {}
     }
 }

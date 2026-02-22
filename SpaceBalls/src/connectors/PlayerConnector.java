@@ -1,29 +1,23 @@
 package connectors;
 
-import model.BallDTO;
-
 import java.io.IOException;
 import java.net.Socket;
-import java.util.function.Consumer;
 
 /**
  * Cliente que se conecta a un servidor remoto.
- * Una vez conectado, crea un CommunicationController.
+ * Cuando se conecta, entrega el Socket al CommunicationController.
  */
 public class PlayerConnector implements Runnable {
 
     private final String serverHost;
     private final int serverPort;
 
-    private CommunicationController communicationController;
+    private final CommunicationController communicationController;
 
-    /** Callback para recibir pelotas desde red */
-    private final Consumer<BallDTO> onBallReceived;
-
-    public PlayerConnector(String host, int port, Consumer<BallDTO> onBallReceived) {
+    public PlayerConnector(String host, int port, CommunicationController communicationController) {
         this.serverHost = host;
         this.serverPort = port;
-        this.onBallReceived = onBallReceived;
+        this.communicationController = communicationController;
     }
 
     /** Inicia el hilo de conexión */
@@ -33,28 +27,41 @@ public class PlayerConnector implements Runnable {
         connectionThread.start();
     }
 
-    /**
-     * Intenta conectar al servidor y crear el controlador de comunicación.
-     */
     @Override
     public void run() {
-        try {
-            System.out.println("Conectando a servidor " + serverHost + ":" + serverPort);
-            Socket socket = new Socket(serverHost, serverPort);
-            System.out.println("Conectado al servidor.");
+        connectWithRetry();
+    }
 
-            communicationController = new CommunicationController(socket, onBallReceived);
-            communicationController.start();
+    /**
+     * Intenta conectar al servidor, reintentando cada pocos segundos si falla.
+     */
+    private void connectWithRetry() {
+        while (true) {
+            try {
+                System.out.println("Conectando a servidor " + serverHost + ":" + serverPort);
+                Socket socket = new Socket(serverHost, serverPort);
+                System.out.println("Conectado al servidor.");
 
-        } catch (IOException e) {
-            System.err.println("Error conectando al servidor: " + e.getMessage());
+                communicationController.attachSocket(socket);
+                break; // conexión establecida, salimos del bucle
+
+            } catch (IOException e) {
+                System.err.println("Error conectando al servidor: " + e.getMessage());
+                try {
+                    Thread.sleep(3000); // esperar antes de reintentar
+                } catch (InterruptedException ignored) {}
+            }
         }
     }
 
-    /** Envía pelota al servidor */
-    public void sendBall(BallDTO ball) {
-        if (communicationController != null) {
-            communicationController.sendBall(ball);
-        }
+    /**
+     * Llamado por CommunicationController cuando el Channel se desconecta.
+     * Vuelve a intentar conectar al servidor.
+     */
+    public void reconnect() {
+        System.out.println("Reintentando conexión con el servidor...");
+        Thread t = new Thread(this::connectWithRetry);
+        t.setDaemon(true);
+        t.start();
     }
 }

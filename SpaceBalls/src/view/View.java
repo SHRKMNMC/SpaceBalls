@@ -1,16 +1,15 @@
 package view;
 
 import controller.Controller;
+import world.Decoration;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.image.BufferedImage;
+import java.util.List;
 
-/**
- * Ventana principal del juego.
- * Ahora también arranca el hilo del Viewer.
- */
 public class View extends JFrame {
 
     private Controller controller;
@@ -29,7 +28,6 @@ public class View extends JFrame {
         this.controller = controller;
     }
 
-    /** Inicializa toda la interfaz */
     public void initUI() {
         viewer = new Viewer(controller);
         dataPanel = new DataPanel(controller);
@@ -43,10 +41,8 @@ public class View extends JFrame {
         setVisible(true);
         setResizable(true);
 
-        // Avisar al modelo del tamaño real del área de juego
         controller.updateBounds(viewer.getWidth(), viewer.getHeight());
 
-        // Si cambia el tamaño, actualizar límites
         viewer.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -56,16 +52,28 @@ public class View extends JFrame {
 
         viewer.requestFocusInWindow();
 
-        // ============================================================
-        // ARRANCAR EL HILO DEL VIEWER
-        // ============================================================
         viewerThread = new Thread(viewer);
         viewerThread.setDaemon(true);
         viewerThread.start();
     }
 
-    /** Ya no se usa para render, pero sí para actualizar datos */
+    // ============================================================
+    // WORLD VISUAL DATA
+    // ============================================================
+
+    public void setWorldBackground(BufferedImage bg) {
+        viewer.setWorldBackground(bg);
+    }
+
+    public void setWorldDecorations(List<Decoration> decorations) {
+        viewer.setWorldDecorations(decorations);
+    }
+
     public void repaintViewer() {
         dataPanel.updateData();
     }
+    public Viewer getViewer() {
+        return viewer;
+    }
+
 }

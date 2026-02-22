@@ -3,6 +3,7 @@ package view;
 import controller.Controller;
 import model.BallDTO;
 import model.CollissionEvent;
+import world.Decoration;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -12,26 +13,21 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Lienzo principal donde se dibuja el juego.
- * Ahora implementa Runnable para poder ejecutarse en su propio hilo.
- */
 public class Viewer extends Canvas implements Runnable {
 
     private final Controller controller;
+
+    private BufferedImage worldBackground;
+    private List<Decoration> worldDecorations = new ArrayList<>();
 
     private final BufferedImage explosionSheet;
     private final List<ActiveAnimation> activeAnimations = new ArrayList<>();
 
     private BufferStrategy bufferStrategy;
 
-    // Estado del teclado
     private boolean keyUp, keyDown, keyLeft, keyRight;
-
-    // Para evitar repetir animaciones
     private CollissionEvent lastAnimatedEvent = null;
 
-    // Control del hilo
     private volatile boolean running = false;
 
     public Viewer(Controller controller) {
@@ -41,27 +37,30 @@ public class Viewer extends Canvas implements Runnable {
         setBackground(Color.BLACK);
         setFocusable(true);
 
-        explosionSheet = SpriteAnimator.loadSheet("/sprite2.png");
+        explosionSheet = SpriteAnimator.loadSheet("/sprites/sprite2.png");
 
-        // Captura de teclas
         addKeyListener(new KeyAdapter() {
             @Override public void keyPressed(KeyEvent e) { updateKey(e.getKeyCode(), true); }
             @Override public void keyReleased(KeyEvent e) { updateKey(e.getKeyCode(), false); }
         });
     }
 
-    /** Estructura para animaciones activas */
-    private static class ActiveAnimation {
-        SpriteAnimator animator;
-        Point position;
+    // ============================================================
+    // WORLD VISUAL DATA
+    // ============================================================
 
-        ActiveAnimation(SpriteAnimator animator, Point position) {
-            this.animator = animator;
-            this.position = position;
-        }
+    public void setWorldBackground(BufferedImage bg) {
+        this.worldBackground = bg;
     }
 
-    /** Actualiza dirección del jugador según teclas */
+    public void setWorldDecorations(List<Decoration> decorations) {
+        this.worldDecorations = decorations;
+    }
+
+    // ============================================================
+    // INPUT
+    // ============================================================
+
     private void updateMovementDirection() {
         int dx = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
         int dy = (keyDown ? 1 : 0) - (keyUp ? 1 : 0);
@@ -78,13 +77,15 @@ public class Viewer extends Canvas implements Runnable {
         updateMovementDirection();
     }
 
-    /** Inicializa doble buffer */
+    // ============================================================
+    // RENDER
+    // ============================================================
+
     private void initBuffer() {
         createBufferStrategy(2);
         bufferStrategy = getBufferStrategy();
     }
 
-    /** Render principal */
     public void render() {
         if (bufferStrategy == null) {
             initBuffer();
@@ -92,22 +93,28 @@ public class Viewer extends Canvas implements Runnable {
         }
 
         Graphics2D g = (Graphics2D) bufferStrategy.getDrawGraphics();
-
         drawScene(g);
-
         g.dispose();
         bufferStrategy.show();
         Toolkit.getDefaultToolkit().sync();
     }
 
-    /** Dibuja pelotas y animaciones */
     private void drawScene(Graphics2D g) {
 
         // Fondo
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, getWidth(), getHeight());
+        if (worldBackground != null) {
+            g.drawImage(worldBackground, 0, 0, getWidth(), getHeight(), null);
+        } else {
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, getWidth(), getHeight());
+        }
 
-        // Dibujar pelotas
+        // Adornos
+        for (Decoration d : worldDecorations) {
+            g.drawImage(d.getImage(), d.getX(), d.getY(), null);
+        }
+
+        // Pelotas
         for (BallDTO ball : controller.getBallsSnapshot()) {
             g.setColor(ball.getColor());
             int diameter = ball.getRadius() * 2;
@@ -118,7 +125,7 @@ public class Viewer extends Canvas implements Runnable {
             );
         }
 
-        // Detectar nuevo evento de colisión
+        // Animaciones
         List<CollissionEvent> events = controller.getCollisionEvents();
         if (!events.isEmpty()) {
             CollissionEvent latest = events.get(events.size() - 1);
@@ -133,7 +140,6 @@ public class Viewer extends Canvas implements Runnable {
             }
         }
 
-        // Dibujar animaciones activas
         for (int i = activeAnimations.size() - 1; i >= 0; i--) {
             ActiveAnimation anim = activeAnimations.get(i);
 
@@ -155,24 +161,27 @@ public class Viewer extends Canvas implements Runnable {
         }
     }
 
-    // ============================================================
-    // HILO PROPIO DEL VIEWER
-    // ============================================================
-
     @Override
     public void run() {
         running = true;
 
         while (running) {
             render();
-
-            try {
-                Thread.sleep(16); // ~60 FPS
-            } catch (InterruptedException ignored) {}
+            try { Thread.sleep(16); } catch (InterruptedException ignored) {}
         }
     }
 
     public void stop() {
         running = false;
+    }
+
+    private static class ActiveAnimation {
+        SpriteAnimator animator;
+        Point position;
+
+        ActiveAnimation(SpriteAnimator animator, Point position) {
+            this.animator = animator;
+            this.position = position;
+        }
     }
 }

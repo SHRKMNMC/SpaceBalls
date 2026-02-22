@@ -3,45 +3,56 @@ package controller;
 import master.MasterController;
 import model.*;
 import view.View;
+import world.Decoration;
 
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Controlador principal del juego.
- * Coordina:
- * - Vista
- * - Modelo
- * - Comunicación en red (MasterController)
- */
 public class Controller {
 
     private final Model model;
     private final View view;
 
-    /** Controlador maestro para red (cliente/servidor) */
     private MasterController masterController;
+
+    // Mundo visual
+    private BufferedImage worldBackground;
+    private List<Decoration> worldDecorations = new ArrayList<>();
 
     public Controller(Model model, View view) {
         this.model = model;
         this.view = view;
     }
 
-    /** Inyecta el MasterController después de crearlo */
     public void setMasterController(MasterController masterController) {
         this.masterController = masterController;
     }
 
-    /**
-     * Inicializa la UI y arranca el game loop del modelo.
-     */
     public void init() {
+        view.setController(this);
         view.initUI();
         model.startGameLoop(view::repaintViewer);
     }
 
-    /**
-     * Crear pelota normal y enviarla por red si procede.
-     */
+    // ============================================================
+    // WORLD GENERATOR → VIEWER
+    // ============================================================
+
+    public void setWorldBackground(BufferedImage bg) {
+        this.worldBackground = bg;
+        view.setWorldBackground(bg);
+    }
+
+    public void setWorldDecorations(List<Decoration> decorations) {
+        this.worldDecorations = decorations;
+        view.setWorldDecorations(decorations);
+    }
+
+    // ============================================================
+    // BALL MANAGEMENT
+    // ============================================================
+
     public void onCreateBall(int radius, int speed) {
         model.createRandomBall(radius, speed);
 
@@ -54,29 +65,17 @@ public class Controller {
         }
     }
 
-    /**
-     * Crear pelota controlable y enviarla por red.
-     */
     public void onCreateControlableBall(int radius, int speed) {
         model.createControlableBall(radius, speed);
-
-        if (masterController != null) {
-            List<BallDTO> snapshot = model.getBallsSnapshot();
-            if (!snapshot.isEmpty()) {
-                BallDTO lastBall = snapshot.get(snapshot.size() - 1);
-                masterController.sendBall(lastBall);
-            }
-        }
     }
 
-    /**
-     * Recibir pelota desde red y crearla en el modelo.
-     */
     public void onReceiveBall(BallDTO dto) {
         model.createBallFromDTO(dto);
     }
 
-    // Métodos de acceso para la vista
+    // ============================================================
+    // VIEW ACCESSORS
+    // ============================================================
 
     public List<BallDTO> getBallsSnapshot() {
         return model.getBallsSnapshot();
@@ -99,12 +98,10 @@ public class Controller {
         return model.getCurrentFPS();
     }
 
-    /** Actualiza dirección de movimiento del jugador */
     public void setControlDirection(int dx, int dy) {
         model.setControlDirection(dx, dy);
     }
 
-    /** Actualiza límites del área de juego */
     public void updateBounds(int width, int height) {
         model.setBounds(width, height);
     }

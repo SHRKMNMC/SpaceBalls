@@ -5,12 +5,12 @@ import java.util.Random;
 
 /**
  * Pelota básica con posición, velocidad y color.
- * La física real la gestiona SimpleFisics.
+ * Cada pelota tiene su propio hilo y actualiza su posición.
  */
 public class Ball implements Runnable {
 
-    protected double x, y;       // posición (centro)
-    protected double velX, velY; // velocidad
+    protected double x, y;
+    protected double velX, velY;
     protected int radius;
     protected Color color;
 
@@ -23,11 +23,13 @@ public class Ball implements Runnable {
         this.velX = velX;
         this.velY = velY;
         this.color = color;
+
+        Thread t = new Thread(this);
+        t.setDaemon(true);
+        t.start();
     }
 
-    /**
-     * Crear una pelota aleatoria dentro de los límites.
-     */
+    /** Crear pelota aleatoria */
     public static Ball randomBall(Rectangle bounds, int radius, int speed) {
         Random random = new Random();
 
@@ -43,23 +45,31 @@ public class Ball implements Runnable {
         return new Ball(x, y, radius, velX, velY, color);
     }
 
-    /** Actualizar posición según velocidad */
-    public void updatePosition(double deltaSeconds) {
-        x += velX * deltaSeconds;
-        y += velY * deltaSeconds;
-    }
-
-    /** Convertir a DTO para red o vista */
-    public BallDTO toDTO() {
-        return new BallDTO(x, y, radius, velX, velY, color);
-    }
-
+    /** Hilo propio de la pelota */
     @Override
     public void run() {
+        long last = System.nanoTime();
+
         while (running) {
-            try { Thread.sleep(10); }
-            catch (InterruptedException e) { running = false; }
+            long now = System.nanoTime();
+            double dt = (now - last) / 1_000_000_000.0;
+            last = now;
+
+            updatePosition(dt);
+
+            try { Thread.sleep(5); }
+            catch (InterruptedException ignored) {}
         }
+    }
+
+    /** Movimiento básico */
+    public void updatePosition(double dt) {
+        x += velX * dt;
+        y += velY * dt;
+    }
+
+    public BallDTO toDTO() {
+        return new BallDTO(x, y, radius, velX, velY, color);
     }
 
     public void stop() { running = false; }

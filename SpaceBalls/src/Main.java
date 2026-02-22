@@ -7,7 +7,8 @@ import javax.swing.*;
 
 /**
  * Punto de entrada del juego.
- * Inicializa MVC, pregunta modo de red y arranca el juego.
+ * Inicializa MVC, genera el mundo, arranca el generador de vida
+ * y pregunta el modo de red.
  */
 public class Main {
 
@@ -23,14 +24,29 @@ public class Main {
             Controller controller = new Controller(gameModel, gameView);
             gameView.setController(controller);
 
-            // Crear controlador maestro para red
+            // Crear controlador maestro
             MasterController masterController = new MasterController(controller);
             controller.setMasterController(masterController);
 
             // Inicializar interfaz y game loop
             controller.init();
 
-            // Preguntar modo de red
+            // ============================================================
+            // GENERAR EL MUNDO (fondo + decoraciones)
+            // ============================================================
+            int w = gameView.getViewer().getWidth();
+            int h = gameView.getViewer().getHeight();
+
+            masterController.generateWorld(w, h);
+
+            // ============================================================
+            // INICIAR LIFE GENERATOR (bolas automáticas cada 5s)
+            // ============================================================
+            masterController.startLifeGenerator(5);
+
+            // ============================================================
+            // PREGUNTAR MODO DE RED
+            // ============================================================
             String[] options = {"Servidor", "Cliente"};
 
             int selection = JOptionPane.showOptionDialog(
