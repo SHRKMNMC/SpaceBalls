@@ -7,7 +7,7 @@ import javax.swing.*;
 
 /**
  * Punto de entrada del juego.
- * Inicializa MVC, genera el mundo, arranca el generador de vida
+ * Inicializa MVC, genera el mundo
  * y pregunta el modo de red.
  */
 public class Main {
@@ -40,9 +40,11 @@ public class Main {
             masterController.generateWorld(w, h);
 
             // ============================================================
-            // INICIAR LIFE GENERATOR (bolas automáticas cada 5s)
+            // IMPORTANTE:
+            // YA NO INICIAMOS EL LIFE GENERATOR AQUÍ
+            // Solo se inicia desde el botón del ControlPanel
             // ============================================================
-            masterController.startLifeGenerator(5);
+
 
             // ============================================================
             // PREGUNTAR MODO DE RED

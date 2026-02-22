@@ -2,6 +2,10 @@ package world;
 
 import controller.Controller;
 
+/**
+ * Genera bolas automáticamente cada X segundos.
+ * Corre en un hilo independiente.
+ */
 public class LifeGenerator implements Runnable {
 
     private final Controller controller;
@@ -11,7 +15,7 @@ public class LifeGenerator implements Runnable {
 
     /**
      * @param controller controlador principal
-     * @param intervalSeconds intervalo entre bolas nuevas
+     * @param intervalSeconds intervalo entre bolas nuevas (solo configurable desde código)
      */
     public LifeGenerator(Controller controller, int intervalSeconds) {
         this.controller = controller;
@@ -25,7 +29,6 @@ public class LifeGenerator implements Runnable {
                 Thread.sleep(intervalMs);
             } catch (InterruptedException ignored) {}
 
-            // Crear bola aleatoria (radio 10–40, velocidad 50–200)
             int radius = 10 + (int)(Math.random() * 30);
             int speed  = 50 + (int)(Math.random() * 150);
 
@@ -33,6 +36,7 @@ public class LifeGenerator implements Runnable {
         }
     }
 
+    /** Detiene el hilo de generación */
     public void stop() {
         running = false;
     }

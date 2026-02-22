@@ -105,4 +105,6 @@ public class Controller {
     public void updateBounds(int width, int height) {
         model.setBounds(width, height);
     }
+    public MasterController getMasterController() {
+        return masterController; }
 }

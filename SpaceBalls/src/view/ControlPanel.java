@@ -1,12 +1,13 @@
 package view;
 
 import controller.Controller;
+import master.MasterController;
 
 import javax.swing.*;
 import java.awt.*;
 
 /**
- * Panel superior con controles para crear pelotas.
+ * Panel superior con controles para crear pelotas y controlar el LifeGenerator.
  */
 public class ControlPanel extends JPanel {
 
@@ -24,12 +25,17 @@ public class ControlPanel extends JPanel {
         JButton createBallButton = new JButton("Añadir pelota");
         JButton createPlayerBallButton = new JButton("Pelota controlable");
 
+        // Botón LifeGenerator
+        JButton toggleLifeButton = new JButton("Iniciar LifeGen");
+
         add(new JLabel("Tamaño:"));
         add(sizeSpinner);
         add(new JLabel("Velocidad:"));
         add(speedSpinner);
         add(createBallButton);
         add(createPlayerBallButton);
+
+        add(toggleLifeButton);
 
         // Crear pelota normal
         createBallButton.addActionListener(e ->
@@ -40,5 +46,20 @@ public class ControlPanel extends JPanel {
         createPlayerBallButton.addActionListener(e ->
                 controller.onCreateControlableBall((int) sizeSpinner.getValue(), (int) speedSpinner.getValue())
         );
+
+        // ============================================================
+        // CONTROL DEL LIFE GENERATOR
+        // ============================================================
+        toggleLifeButton.addActionListener(e -> {
+            MasterController mc = controller.getMasterController();
+
+            if (mc.isLifeGeneratorRunning()) {
+                mc.stopLifeGenerator();
+                toggleLifeButton.setText("Iniciar LifeGen");
+            } else {
+                mc.startLifeGenerator();
+                toggleLifeButton.setText("Detener LifeGen");
+            }
+        });
     }
 }

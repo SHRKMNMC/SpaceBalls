@@ -27,6 +27,9 @@ public class MasterController {
     private LifeGenerator lifeGenerator;
     private Thread lifeThread;
 
+    // Intervalo interno del LifeGenerator (modificable SOLO desde código)
+    private int lifeIntervalSeconds = 5;
+
     public MasterController(Controller controller) {
         this.localController = controller;
         this.communicationController = new CommunicationController(this::onBallReceived);
@@ -36,35 +39,39 @@ public class MasterController {
     // WORLD GENERATION
     // ============================================================
 
-    /**
-     * Genera el mundo visual (fondo + decoraciones).
-     */
     public void generateWorld(int width, int height) {
         worldGenerator = new WorldGenerator(localController);
-        worldGenerator.generateWorld(width, height, 10); // 10 adornos
+        worldGenerator.generateWorld(width, height, 10);
     }
 
     // ============================================================
-    // LIFE GENERATOR (bolas automáticas)
+    // LIFE GENERATOR
     // ============================================================
 
-    /**
-     * Inicia el generador de vida que crea bolas cada X segundos.
-     */
-    public void startLifeGenerator(int intervalSeconds) {
-        lifeGenerator = new LifeGenerator(localController, intervalSeconds);
+    /** Inicia el generador de vida con el intervalo interno. */
+    public void startLifeGenerator() {
+        if (lifeGenerator != null) return;
+
+        lifeGenerator = new LifeGenerator(localController, lifeIntervalSeconds);
         lifeThread = new Thread(lifeGenerator);
         lifeThread.setDaemon(true);
         lifeThread.start();
+
+        System.out.println("LifeGenerator iniciado.");
     }
 
-    /**
-     * Detiene el generador de vida.
-     */
+    /** Detiene el generador de vida. */
     public void stopLifeGenerator() {
         if (lifeGenerator != null) {
             lifeGenerator.stop();
+            lifeGenerator = null;
+            System.out.println("LifeGenerator detenido.");
         }
+    }
+
+    /** Saber si está activo. */
+    public boolean isLifeGeneratorRunning() {
+        return lifeGenerator != null;
     }
 
     // ============================================================
