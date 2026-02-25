@@ -1,7 +1,11 @@
 import controller.Controller;
+import controller.Generator;
+import controller.WorldGen;
 import master.MasterController;
 import model.Model;
 import view.View;
+import world.LifeGenerator;
+import world.WorldGenerator;
 
 import javax.swing.*;
 
@@ -32,6 +36,16 @@ public class Main {
             controller.init();
 
             // ============================================================
+            // INSTANCIAR WORLD GENERATOR DESDE EL MAIN
+            // ============================================================
+            WorldGen worldGenInterface = controller;
+
+            WorldGenerator worldGenerator =
+                    new WorldGenerator(worldGenInterface, masterController);
+
+            masterController.setWorldGenerator(worldGenerator);
+
+            // ============================================================
             // GENERAR EL MUNDO (fondo + decoraciones)
             // ============================================================
             int w = gameView.getViewer().getWidth();
@@ -40,11 +54,14 @@ public class Main {
             masterController.generateWorld(w, h);
 
             // ============================================================
-            // IMPORTANTE:
-            // YA NO INICIAMOS EL LIFE GENERATOR AQUÍ
-            // Solo se inicia desde el botón del ControlPanel
+            // INSTANCIAR LIFE GENERATOR DESDE EL MAIN
             // ============================================================
+            Generator generatorInterface = controller;
 
+            LifeGenerator lifeGenerator =
+                    new LifeGenerator(generatorInterface, masterController, 5);
+
+            masterController.setLifeGenerator(lifeGenerator);
 
             // ============================================================
             // PREGUNTAR MODO DE RED

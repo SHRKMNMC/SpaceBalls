@@ -4,16 +4,16 @@ import connectors.CommunicationController;
 import connectors.PlayerConnector;
 import connectors.ServerConnector;
 import controller.Controller;
+import controller.Generator;
+import controller.WorldGen;
 import model.BallDTO;
 import world.WorldGenerator;
 import world.LifeGenerator;
+import world.Decoration;
 
-/**
- * Controlador maestro que coordina:
- * - Comunicación en red
- * - Generación del mundo (fondo + decoraciones)
- * - Generación de vida (bolas automáticas)
- */
+import java.awt.image.BufferedImage;
+import java.util.List;
+
 public class MasterController {
 
     private final Controller localController;
@@ -27,32 +27,50 @@ public class MasterController {
     private LifeGenerator lifeGenerator;
     private Thread lifeThread;
 
-    // Intervalo interno del LifeGenerator (modificable SOLO desde código)
     private int lifeIntervalSeconds = 5;
 
     public MasterController(Controller controller) {
         this.localController = controller;
+        this.localController.setMasterController(this);
         this.communicationController = new CommunicationController(this::onBallReceived);
     }
 
     // ============================================================
-    // WORLD GENERATION
+    // INYECCIÓN DEL WORLD GENERATOR DESDE EL MAIN
     // ============================================================
 
+    public void setWorldGenerator(WorldGenerator generator) {
+        this.worldGenerator = generator;
+    }
+
     public void generateWorld(int width, int height) {
-        worldGenerator = new WorldGenerator(localController);
+        if (worldGenerator == null) {
+            System.err.println("WorldGenerator no ha sido inyectado desde el Main.");
+            return;
+        }
         worldGenerator.generateWorld(width, height, 10);
+    }
+
+    public void onWorldGenerated(BufferedImage bg, List<Decoration> decorations) {
+        // Hook opcional
     }
 
     // ============================================================
     // LIFE GENERATOR
     // ============================================================
 
-    /** Inicia el generador de vida con el intervalo interno. */
-    public void startLifeGenerator() {
-        if (lifeGenerator != null) return;
+    public void setLifeGenerator(LifeGenerator generator) {
+        this.lifeGenerator = generator;
+    }
 
-        lifeGenerator = new LifeGenerator(localController, lifeIntervalSeconds);
+    public void startLifeGenerator() {
+        if (lifeGenerator == null) {
+            System.err.println("LifeGenerator no ha sido inyectado desde el Main.");
+            return;
+        }
+
+        if (lifeThread != null) return;
+
         lifeThread = new Thread(lifeGenerator);
         lifeThread.setDaemon(true);
         lifeThread.start();
@@ -60,18 +78,20 @@ public class MasterController {
         System.out.println("LifeGenerator iniciado.");
     }
 
-    /** Detiene el generador de vida. */
     public void stopLifeGenerator() {
         if (lifeGenerator != null) {
             lifeGenerator.stop();
-            lifeGenerator = null;
+            lifeThread = null;
             System.out.println("LifeGenerator detenido.");
         }
     }
 
-    /** Saber si está activo. */
     public boolean isLifeGeneratorRunning() {
-        return lifeGenerator != null;
+        return lifeThread != null;
+    }
+
+    public void onLifeGeneratorEvent(int radius, int speed) {
+        // Hook opcional
     }
 
     // ============================================================

@@ -9,14 +9,13 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Controller {
+public class Controller implements Generator, WorldGen {
 
     private final Model model;
     private final View view;
 
     private MasterController masterController;
 
-    // Mundo visual
     private BufferedImage worldBackground;
     private List<Decoration> worldDecorations = new ArrayList<>();
 
@@ -36,23 +35,26 @@ public class Controller {
     }
 
     // ============================================================
-    // WORLD GENERATOR → VIEWER
+    // WORLD GENERATOR → VIEWER (WorldGen interface)
     // ============================================================
 
+    @Override
     public void setWorldBackground(BufferedImage bg) {
         this.worldBackground = bg;
         view.setWorldBackground(bg);
     }
 
+    @Override
     public void setWorldDecorations(List<Decoration> decorations) {
         this.worldDecorations = decorations;
         view.setWorldDecorations(decorations);
     }
 
     // ============================================================
-    // BALL MANAGEMENT
+    // BALL MANAGEMENT (Generator interface)
     // ============================================================
 
+    @Override
     public void onCreateBall(int radius, int speed) {
         model.createRandomBall(radius, speed);
 
@@ -105,6 +107,8 @@ public class Controller {
     public void updateBounds(int width, int height) {
         model.setBounds(width, height);
     }
+
     public MasterController getMasterController() {
-        return masterController; }
+        return masterController;
+    }
 }
