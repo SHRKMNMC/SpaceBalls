@@ -1,5 +1,6 @@
 package master;
 
+import connectors.CommunicationController;
 import connectors.PlayerConnector;
 import connectors.ServerConnector;
 import controller.Controller;
@@ -13,22 +14,27 @@ public class MasterController {
 
     private final Controller localController;
 
+    private final CommunicationController communicationController;
     private ServerConnector serverConnector;
     private PlayerConnector playerConnector;
 
     public MasterController(Controller controller) {
         this.localController = controller;
+        // CommunicationController centraliza la lógica de red
+        this.communicationController = new CommunicationController(this::onBallReceived);
     }
 
     /** Inicia modo servidor */
     public void startAsServer(int port) {
-        serverConnector = new ServerConnector(port, this::onBallReceived);
+        serverConnector = new ServerConnector(port, communicationController);
+        communicationController.registerServerConnector(serverConnector);
         serverConnector.start();
     }
 
     /** Inicia modo cliente */
     public void startAsClient(String host, int port) {
-        playerConnector = new PlayerConnector(host, port, this::onBallReceived);
+        playerConnector = new PlayerConnector(host, port, communicationController);
+        communicationController.registerPlayerConnector(playerConnector);
         playerConnector.start();
     }
 
@@ -40,7 +46,6 @@ public class MasterController {
 
     /** Enviar pelota al otro jugador */
     public void sendBall(BallDTO ball) {
-        if (serverConnector != null) serverConnector.sendBall(ball);
-        if (playerConnector != null) playerConnector.sendBall(ball);
+        communicationController.sendBall(ball);
     }
 }
